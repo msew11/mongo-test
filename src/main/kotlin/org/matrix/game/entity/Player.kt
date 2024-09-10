@@ -1,7 +1,5 @@
 package org.matrix.game.entity
 
-import org.matrix.game.RootDocument
-import org.matrix.game.SubDocument
 import org.springframework.data.annotation.Id
 
 /**

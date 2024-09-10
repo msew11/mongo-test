@@ -15,6 +15,11 @@ dependencies {
     implementation("org.springframework.data:spring-data-mongodb:3.4.2")
     implementation("org.reflections:reflections:0.9.11")
 
+
+
+    api("com.mysql:mysql-connector-j:8.3.0")
+    api("org.hibernate:hibernate-core:6.5.2.Final")
+
     implementation("ch.qos.logback:logback-classic:1.5.6")
     implementation(kotlin("reflect"))
 

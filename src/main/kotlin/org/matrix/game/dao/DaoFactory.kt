@@ -1,12 +1,13 @@
-package org.matrix.game
+package org.matrix.game.dao
 
 import com.mongodb.ConnectionString
 import com.mongodb.MongoClientSettings
 import com.mongodb.MongoCredential
-import com.mongodb.client.MongoClient
+import com.mongodb.WriteConcern
 import com.mongodb.client.MongoClients
-import org.bson.Document
-import org.bson.types.ObjectId
+import jakarta.persistence.Entity
+import org.hibernate.cfg.Configuration
+import org.matrix.game.entity.IDocument
 import org.reflections.Reflections
 import org.springframework.data.convert.TypeInformationMapper
 import org.springframework.data.mapping.Alias
@@ -24,18 +25,19 @@ import java.util.concurrent.TimeUnit
 /**
  * [java sync 版本兼容性](https://www.mongodb.com/zh-cn/docs/drivers/java/sync/current/compatibility/)
  */
-class MongoTest {
+class DaoFactory {
 
     companion object {
 
         @JvmStatic
-        fun createDao(): MongoDbDao {
+        fun createMongoDao(): MongoDbDao {
             val db_username = "admin"
             val db_password = "123456"
             val hostname = "localhost"
             val port = 27017
             val auth_db = "admin"
             val setting = MongoClientSettings.builder()
+                .writeConcern(WriteConcern.W1)
                 .applyConnectionString(ConnectionString("mongodb://${hostname}:${port}"))
                 //.applyConnectionString(ConnectionString("mongodb://${db_username}:${db_password}@${hostname}:${port}/${auth_db}?connectTimeoutMS=2000"))
                 .credential(MongoCredential.createCredential(db_username, auth_db, db_password.toCharArray()))
@@ -54,7 +56,7 @@ class MongoTest {
             val converter = MappingMongoConverter(DefaultDbRefResolver(mongoDbFactory), MongoMappingContext())
             // 查找会根据这里设置的_class去读把
             converter.typeMapper = DefaultMongoTypeMapper("_class", listOf(CustomTypeInformationMapper()))
-            val mongoDbDao = MongoDbDao(MongoTemplate(mongoDbFactory, converter))
+            val mongoDbDao = MongoDbDao(client, MongoTemplate(mongoDbFactory, converter))
 
             check(mongoDbDao, converter)
 
@@ -75,6 +77,28 @@ class MongoTest {
                     // println("entity: $entity")
                 }
             }
+        }
+
+        fun createHibernateDao(): HibernateDao {
+            val host = "localhost:3306"
+            val dbName = "game_matrix"
+            val username = "root"
+            val password = "123456"
+
+
+            val url = "jdbc:mysql://${host}/${dbName}?createDatabaseIfNotExist=true"
+            val hibernateCfg = Configuration().configure("hibernate.cfg.xml")
+            hibernateCfg.setProperty("hibernate.connection.url", url)
+            hibernateCfg.setProperty("hibernate.connection.username", username)
+            hibernateCfg.setProperty("hibernate.connection.password", password)
+
+            val scanClass = Reflections("org.matrix.game")
+                .getTypesAnnotatedWith(Entity::class.java)
+            scanClass.forEach {
+                hibernateCfg.addAnnotatedClass(it)
+            }
+
+            return HibernateDao(hibernateCfg.buildSessionFactory())
         }
     }
 

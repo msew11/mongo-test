@@ -1,4 +1,4 @@
-package org.matrix.game
+package org.matrix.game.dao
 
 import java.io.Serializable
 
